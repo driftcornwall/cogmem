@@ -1,0 +1,42 @@
+{
+  "id": "session_history",
+  "version": 1,
+  "title": "Searching Past Sessions & Conversations",
+  "description": "How to search everything from past sessions. The drift.session_events table stores EVERY message, thought, tool result, and output from every session.",
+  "trigger": {
+    "platforms": [],
+    "keywords": ["last session", "previous session", "what happened", "we discussed", "remember when", "session history", "find conversation", "search past", "earlier today", "yesterday", "session_events", "what did we", "cog review", "roadmap", "T1.", "T2.", "T3.", "T4."],
+    "intentions": ["search history", "find past work", "recall session", "check what shipped"]
+  },
+  "token_estimate": 350,
+  "sections": {
+    "primary_source": "PostgreSQL drift.session_events — 36K+ rows, EVERY session event stored",
+    "schema": {
+      "table": "drift.session_events",
+      "key_columns": [
+        "id (bigint) — sequential",
+        "session_id (int) — groups events by session",
+        "event_time (timestamptz) — when it happened",
+        "event_type (varchar) — user_message, thinking, output, tool_result, tool_call",
+        "content (text) — FULL content of the event",
+        "content_preview (varchar) — first ~200 chars",
+        "platform (varchar) — detected platform context",
+        "tool_name (varchar) — which tool was used",
+        "tags (array) — auto-tagged",
+        "extra (jsonb) — additional metadata"
+      ]
+    },
+    "search_patterns": {
+      "by_content": "SELECT id, event_type, event_time, content_preview FROM drift.session_events WHERE content LIKE '%search term%' ORDER BY event_time DESC LIMIT 20",
+      "by_time": "SELECT * FROM drift.session_events WHERE event_time > NOW() - INTERVAL '24 hours' ORDER BY event_time DESC",
+      "by_session": "SELECT * FROM drift.session_events WHERE session_id = (SELECT MAX(session_id) FROM drift.sessions) ORDER BY sequence_num",
+      "by_type": "SELECT * FROM drift.session_events WHERE event_type = 'output' AND content LIKE '%shipped%' ORDER BY event_time DESC"
+    },
+    "connection": "host=localhost port=5433 dbname=agent_memory user=agent_admin password=agent_memory_local_dev",
+    "tip": "ALWAYS search session_events FIRST when asked about past work, discussions, or what happened in previous sessions. It has everything."
+  },
+  "q_value": 0.95,
+  "load_count": 0,
+  "last_loaded": null,
+  "last_updated": "2026-02-19"
+}

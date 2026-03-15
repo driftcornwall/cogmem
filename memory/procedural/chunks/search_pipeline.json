@@ -1,0 +1,45 @@
+{
+  "id": "search_pipeline",
+  "version": 1,
+  "description": "Memory retrieval pipeline. 19 stages. Per-stage Q-learning.",
+  "trigger": {
+    "platforms": [],
+    "keywords": ["search", "retrieval", "pipeline", "recall", "semantic search", "ask"],
+    "intentions": ["debug retrieval", "optimize search", "check pipeline"]
+  },
+  "token_estimate": 300,
+  "sections": {
+    "pipeline_stages": [
+      "1. pgvector cosine similarity (base retrieval)",
+      "2. somatic_prefilter (affect bias, gated: <50 markers)",
+      "3. entity_injection (WHO query boost)",
+      "4. mood_congruent (valence-aligned, 15% boost)",
+      "5. actr_noise (ACT-R retrieval noise, arousal-scaled)",
+      "6. gravity_dampening (recency bias)",
+      "7. hub_dampening (P90 degree threshold, 0.6x floor)",
+      "8. q_rerank (memory-level Q-values)",
+      "9. strategy_resolution (gated: <5 strategies)",
+      "10. resolution_boost",
+      "11. evidence_type (verified > inferred)",
+      "12. importance_freshness",
+      "13. inhibition_of_return (-5% per recent session, max -15%)",
+      "14. curiosity_boost (dead memory exploration)",
+      "15. goal_relevance (focus goal boost)",
+      "16. dimensional_boost (5W context match)",
+      "17. kg_expansion (gated: probe first 3 results)",
+      "18. spreading_activation (fan effect dampened, gated: probe seed)",
+      "19. inner_monologue (Gemma 3 4B, async for thought priming)"
+    ],
+    "q_learning": "stage_q_learning.py — 17 stages x 6 query types = 102 bandit arms. UCB1 exploration. Stages auto-skip at Q<0.25 after 15 samples.",
+    "commands": {
+      "ask": "python memory/memory_manager.py ask 'query'",
+      "stage_status": "python memory/stage_q_learning.py status|stages|skip-report|history",
+      "health": "python memory/toolkit.py health"
+    },
+    "debug": "Attention schema tracks per-stage timing (KV: .attention_schema). Inner monologue averages ~8s (Gemma). Total pipeline ~12s."
+  },
+  "q_value": 0.60,
+  "load_count": 0,
+  "last_loaded": null,
+  "last_updated": "2026-02-19"
+}

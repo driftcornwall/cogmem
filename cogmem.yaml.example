@@ -1,0 +1,59 @@
+# CogMem Configuration
+# Copy this file to cogmem.yaml and edit for your agent.
+# See README.md for all available options.
+
+agent:
+  name: "MyAgent"           # Your agent's display name
+  schema: "myagent"         # PostgreSQL schema name (lowercase, no spaces)
+
+database:
+  host: localhost
+  port: 5433
+  name: agent_memory
+  user: agent_admin
+  password: agent_memory_local_dev
+
+models:
+  embeddings:
+    provider: openai           # openai | local
+    model: text-embedding-3-small
+    dimensions: 1536           # Must match DB schema — run init_db after changing
+    endpoint: null             # null = OpenAI default, or URL for local TEI service
+    api_key_env: OPENAI_API_KEY
+  llm:
+    provider: openai           # openai | ollama
+    model: gpt-4o-mini
+    endpoint: null             # null = OpenAI default, or http://localhost:11434
+    api_key_env: OPENAI_API_KEY
+  nli:
+    provider: skip             # skip | openai | local — skip disables contradiction detection
+    endpoint: null
+
+# Agent personality — affects mood dynamics and attention
+personality:
+  valence_baseline: 0.1        # Default mood (-1 to 1). 0.1 = slightly optimistic
+  arousal_reactivity: 0.8      # How responsive to stimulation (0-1)
+  curiosity_weight: 0.7        # Weight given to curiosity in exploration (0-1)
+
+# Entity recognition — populate with agents/contacts your agent interacts with
+entities:
+  known_agents: []             # e.g., ["alice", "bob"]
+  known_contacts: {}           # e.g., {"alice": "Alice Bot", "bob": "Bob Agent"}
+  known_projects: []           # e.g., ["myproject"]
+  agent_aliases: {}            # e.g., {"al": "alice", "robert": "bob"}
+
+# Search pipeline tuning
+search:
+  pipeline_stages: 19          # 1-19, reduce for simpler/faster deployments
+  workspace_budget: 3000       # Token budget for workspace broadcast
+  inner_monologue: true        # Set false to skip local LLM evaluation step
+
+# Hook configuration
+hooks:
+  session_start: true          # Auto-prime memories on session start
+  session_end: true            # Auto-consolidate on session end
+  post_tool: true              # Auto-capture after tool use
+
+# Additional procedural chunk directories
+procedural:
+  chunk_paths: []              # e.g., ["/path/to/my/chunks"]
