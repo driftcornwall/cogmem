@@ -28,10 +28,18 @@ MEMORY_DIR = Path(__file__).parent
 if str(MEMORY_DIR) not in sys.path:
     sys.path.insert(0, str(MEMORY_DIR))
 
-# Configuration
+# Configuration — loaded from cogmem.yaml, with hardcoded fallbacks
+def _get_llm_config():
+    try:
+        from config import get_config
+        return get_config()['models']['llm']
+    except Exception:
+        return {'provider': 'openai', 'model': 'gpt-4o-mini', 'endpoint': None, 'api_key_env': 'OPENAI_API_KEY'}
+
+_LLM_CFG = _get_llm_config()
 OLLAMA_BASE_URL = "http://localhost:11434/v1"
-OLLAMA_MODEL = "gemma3:4b"   # 4B param, good at synthesis. Already downloaded.
-OPENAI_MODEL = "gpt-5-mini"  # Reasoning model: no temperature, uses max_completion_tokens
+OLLAMA_MODEL = "gemma3:4b"
+OPENAI_MODEL = _LLM_CFG.get('model', 'gpt-4o-mini')
 OPENAI_CREDS_PATH = Path.home() / ".config" / "openai" / "drift-credentials.json"
 
 # Timeouts
@@ -40,7 +48,14 @@ REMOTE_TIMEOUT = 30
 
 
 def _load_openai_key() -> str:
-    """Load OpenAI API key from credentials file."""
+    """Load OpenAI API key: config env var first, then credentials file."""
+    import os
+    # Check config's api_key_env first
+    env_var = _LLM_CFG.get('api_key_env', 'OPENAI_API_KEY')
+    key = os.environ.get(env_var, '')
+    if key:
+        return key
+    # Fall back to credentials file
     try:
         with open(OPENAI_CREDS_PATH, 'r') as f:
             data = json.load(f)

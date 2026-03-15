@@ -34,8 +34,14 @@ _ABLATION_SKIP_GRAVITY = False
 _ABLATION_SKIP_CURIOSITY = False
 
 
-def get_embedding_openai(text: str, model: str = "text-embedding-3-small") -> Optional[list[float]]:
+def get_embedding_openai(text: str, model: str = None) -> Optional[list[float]]:
     """Get embedding from OpenAI API."""
+    if model is None:
+        try:
+            from config import get_config
+            model = get_config()['models']['embeddings']['model']
+        except Exception:
+            model = "text-embedding-3-small"
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return None

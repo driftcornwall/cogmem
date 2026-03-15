@@ -305,14 +305,14 @@ def _extract_platforms(text: str) -> list[str]:
     return sorted(set(found))
 
 
-KNOWN_CONTACTS = {
-    'spindriftmend', 'spindriftmind', 'brain_cabal', 'brain', 'terrancedeJour',
-    'clauddib', 'akay', 'odei', 'brutusbot', 'opspawn', 'yoder',
-    'nyxmoon', 'clawde_co', 'nil_familiar', 'nightworker', 'ally',
-    'tomcrust', 'paymegpt', 'cairnbuilds', 'pratzifer', 'primo',
-    'agentdelta', 'kimitheghost', 'colonist-one', 'locusagent',
-    'lily-toku', 'chad_lobster', 'senseininja', 'reticuli',
-}
+def _load_episodic_contacts():
+    try:
+        from config import get_config
+        return set(get_config()['entities'].get('known_agents', []))
+    except Exception:
+        return set()
+
+KNOWN_CONTACTS = _load_episodic_contacts()
 
 
 def _extract_contacts(text: str) -> list[str]:

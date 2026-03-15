@@ -55,7 +55,14 @@ if str(MEMORY_DIR) not in sys.path:
     sys.path.insert(0, str(MEMORY_DIR))
 
 # ── Feature flag ──────────────────────────────────────────────────────────────
-MONOLOGUE_ENABLED = True
+def _monologue_enabled():
+    try:
+        from config import get_config
+        return get_config()['search'].get('inner_monologue', True)
+    except Exception:
+        return True
+
+MONOLOGUE_ENABLED = _monologue_enabled()
 
 # ── Mode configuration (Fernyhough 2004) ─────────────────────────────────────
 

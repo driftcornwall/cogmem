@@ -2,8 +2,8 @@
 """
 Database Adapter — Bridges memory modules to the shared PostgreSQL DAL.
 
-Provides a module-level MemoryDB instance for Drift, lazily initialized.
-All memory modules import from here instead of directly from memorydatabase.
+Provides a module-level MemoryDB instance, lazily initialized.
+All memory modules import from here instead of directly from database.
 
 PostgreSQL is the ONLY data store. No file fallbacks. If DB is down, we fail loud.
 
@@ -13,27 +13,49 @@ Usage:
     memory = db.get_memory('abc12345')
 """
 
+import os
 import sys
 from pathlib import Path
 
-# Add memorydatabase to path
-_DB_PATH = Path(__file__).parent.parent.parent / "memorydatabase"
-if str(_DB_PATH) not in sys.path:
-    sys.path.insert(0, str(_DB_PATH))
+# database/ is a sibling directory of memory/ — add its parent so
+# ``from database.db import MemoryDB`` resolves correctly.
+_DB_PATH = Path(__file__).parent.parent / "database"
+if str(_DB_PATH.parent) not in sys.path:
+    sys.path.insert(0, str(_DB_PATH.parent))
 
 _db_instance = None
 
 
 def get_db():
-    """Get the Drift MemoryDB instance (lazy singleton). Raises if DB unreachable."""
+    """Get the MemoryDB instance (lazy singleton). Raises if DB unreachable.
+
+    Schema name and DB credentials are read from cogmem config (cogmem.yaml).
+    Falls back to COGMEM_SCHEMA env var, then 'agent' as default.
+    """
     global _db_instance
     if _db_instance is None:
-        # Ensure memorydatabase is in sys.path (may have been removed by
+        # Ensure database package is importable (may have been removed by
         # toolkit.py's resolve_module which saves/restores sys.path)
-        if str(_DB_PATH) not in sys.path:
-            sys.path.insert(0, str(_DB_PATH))
+        if str(_DB_PATH.parent) not in sys.path:
+            sys.path.insert(0, str(_DB_PATH.parent))
+
+        # Read schema and DB credentials from config
+        schema = os.environ.get('COGMEM_SCHEMA', 'agent')
+        try:
+            from config import get_config
+            cfg = get_config()
+            schema = cfg['agent']['schema']
+            db_cfg = cfg['database']
+            os.environ.setdefault('DB_HOST', str(db_cfg['host']))
+            os.environ.setdefault('DB_PORT', str(db_cfg['port']))
+            os.environ.setdefault('DB_NAME', str(db_cfg['name']))
+            os.environ.setdefault('DB_USER', str(db_cfg['user']))
+            os.environ.setdefault('DB_PASSWORD', str(db_cfg['password']))
+        except Exception:
+            pass  # Config unavailable — use env vars / defaults
+
         from database.db import MemoryDB
-        _db_instance = MemoryDB(schema='drift')
+        _db_instance = MemoryDB(schema=schema)
     return _db_instance
 
 

@@ -132,9 +132,9 @@ KV_EMOTION_EPISODES = '.affect_episodes'
 
 @dataclass
 class Temperament:
-    """Agent-specific affective baseline. Different for each twin."""
-    valence_baseline: float = 0.1     # Drift: slightly optimistic
-    arousal_reactivity: float = 0.8   # Drift: responsive to stimulation
+    """Agent-specific affective baseline. Configurable via cogmem config."""
+    valence_baseline: float = 0.1
+    arousal_reactivity: float = 0.8
     loss_aversion: float = 2.0        # Standard Kahneman
 
     def to_dict(self) -> dict:
@@ -145,12 +145,18 @@ class Temperament:
         return cls(**{k: d[k] for k in ('valence_baseline', 'arousal_reactivity', 'loss_aversion') if k in d})
 
     @classmethod
-    def drift(cls) -> 'Temperament':
-        return cls(valence_baseline=0.1, arousal_reactivity=0.8, loss_aversion=2.0)
-
-    @classmethod
-    def spin(cls) -> 'Temperament':
-        return cls(valence_baseline=-0.05, arousal_reactivity=0.6, loss_aversion=2.5)
+    def from_config(cls):
+        """Load personality from cogmem config."""
+        try:
+            from config import get_config
+            p = get_config().get('personality', {})
+            return cls(
+                valence_baseline=p.get('valence_baseline', 0.1),
+                arousal_reactivity=p.get('arousal_reactivity', 0.8),
+                loss_aversion=p.get('loss_aversion', 2.0),
+            )
+        except Exception:
+            return cls()
 
 
 # ─── Action Tendencies ──────────────────────────────────────────────────────
@@ -551,7 +557,7 @@ class MoodState:
     arousal: float = 0.3
     event_count: int = 0
     last_updated: str = ""
-    temperament: Temperament = field(default_factory=Temperament.drift)
+    temperament: Temperament = field(default_factory=Temperament.from_config)
     # Spring-damper state (velocity)
     valence_velocity: float = 0.0
     arousal_velocity: float = 0.0
@@ -712,7 +718,7 @@ class MoodState:
 
     @classmethod
     def from_dict(cls, d: dict) -> 'MoodState':
-        temp = Temperament.from_dict(d.get('temperament', {})) if 'temperament' in d else Temperament.drift()
+        temp = Temperament.from_dict(d.get('temperament', {})) if 'temperament' in d else Temperament.from_config()
         return cls(
             valence=d.get('valence', 0.0),
             arousal=d.get('arousal', 0.3),

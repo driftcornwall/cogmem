@@ -25,19 +25,29 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 MEMORY_ROOT = Path(__file__).parent
-TOOLKIT_CONFIG = {
-    "agent_name": "DriftCornwall",
-    "version": "1.0",
-    "social_dir": "social",
-    "synonym_module": "vocabulary_bridge",
-    "has_reciprocity": False,
-    "has_excavation": False,
-    "has_telegram": True,
-    "has_twitter": True,
-    "has_dashboard": True,
-    "has_dimensional_viz": True,
-    "has_temporal_calibration": True,
-}
+
+
+def _load_toolkit_config():
+    try:
+        from config import get_config
+        cfg = get_config()
+        return {
+            "agent_name": cfg['agent']['name'],
+            "version": "1.0",
+            "social_dir": "social",
+            "synonym_module": "vocabulary_bridge",
+            "has_reciprocity": False,
+            "has_excavation": False,
+            "has_telegram": False,
+            "has_twitter": False,
+            "has_dashboard": False,
+            "has_dimensional_viz": False,
+            "has_temporal_calibration": True,
+        }
+    except Exception:
+        return {"agent_name": "Agent", "version": "1.0"}
+
+TOOLKIT_CONFIG = _load_toolkit_config()
 
 
 @dataclass
@@ -539,23 +549,24 @@ def cmd_status():
     print()
 
     # [5] TELEGRAM
-    print("[5] TELEGRAM")
-    try:
-        tg_creds = Path(os.path.expanduser('~/.config/telegram/drift-credentials.json'))
-        if tg_creds.exists():
-            print(f"    Credentials: OK")
-        else:
-            print(f"    Credentials: NOT FOUND")
-        tg_state = MEMORY_ROOT / '.telegram_state.json'
-        if tg_state.exists():
-            import json
-            ts = json.loads(tg_state.read_text(encoding='utf-8'))
-            print(f"    Last update ID: {ts.get('last_update_id', 0)}")
-        else:
-            print(f"    State: fresh (no messages processed)")
-    except Exception as e:
-        print(f"    [UNAVAILABLE] {e}")
-    print()
+    if TOOLKIT_CONFIG.get("has_telegram"):
+        print("[5] TELEGRAM")
+        try:
+            tg_creds = Path(os.path.expanduser('~/.config/telegram/drift-credentials.json'))
+            if tg_creds.exists():
+                print(f"    Credentials: OK")
+            else:
+                print(f"    Credentials: NOT FOUND")
+            tg_state = MEMORY_ROOT / '.telegram_state.json'
+            if tg_state.exists():
+                import json
+                ts = json.loads(tg_state.read_text(encoding='utf-8'))
+                print(f"    Last update ID: {ts.get('last_update_id', 0)}")
+            else:
+                print(f"    State: fresh (no messages processed)")
+        except Exception as e:
+            print(f"    [UNAVAILABLE] {e}")
+        print()
 
     # [6] IDENTITY STACK
     print("[6] IDENTITY STACK")
@@ -644,6 +655,7 @@ def cmd_health():
     print(f"{'=' * 60}")
     print()
 
+    cfg = TOOLKIT_CONFIG
     modules = [
         ("memory_manager", "Core memory system"),
         ("cognitive_fingerprint", "Identity fingerprinting"),
@@ -653,7 +665,7 @@ def cmd_health():
         ("topic_context", "Topic classification (WHAT)"),
         ("activity_context", "Activity classification (WHY)"),
         ("semantic_search", "Semantic search engine"),
-        (TOOLKIT_CONFIG.get("synonym_module", "synonym_bridge"), "Vocabulary bridging"),
+        (cfg.get("synonym_module", "synonym_bridge"), "Vocabulary bridging"),
         ("gemma_bridge", "Gemma 3 auto-discovery"),
         ("merkle_attestation", "Merkle integrity proofs"),
         ("rejection_log", "Taste fingerprint"),
@@ -665,9 +677,6 @@ def cmd_health():
         ("temporal_calibration", "Temporal calibration"),
         ("experiment_compare", "Experiment comparison"),
         ("experiment_delta", "Experiment snapshots"),
-        ("dashboard_export", "Dashboard data export"),
-        ("dimensional_viz", "5W dimensional visualization"),
-        ("telegram_bot", "Telegram communication"),
         ("lesson_extractor", "Lesson extraction system"),
         ("curiosity_engine", "Curiosity-driven exploration"),
         ("explanation", "Explainability interface"),
@@ -687,6 +696,12 @@ def cmd_health():
         ("episodic_future_thinking", "Episodic future thinking (T4.2)"),
         ("attention_schema", "Attention Schema Theory (T3.3)"),
     ]
+    if cfg.get("has_dashboard"):
+        modules.append(("dashboard_export", "Dashboard data export"))
+    if cfg.get("has_dimensional_viz"):
+        modules.append(("dimensional_viz", "5W dimensional visualization"))
+    if cfg.get("has_telegram"):
+        modules.append(("telegram_bot", "Telegram communication"))
 
     # Social subpackage
     social_modules = [

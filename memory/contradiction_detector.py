@@ -22,7 +22,17 @@ _parent = str(Path(__file__).resolve().parent)
 if _parent not in sys.path:
     sys.path.insert(0, _parent)
 
-NLI_ENDPOINT = "http://localhost:8082"
+def _get_nli_endpoint():
+    try:
+        from config import get_config
+        cfg = get_config()['models']['nli']
+        if cfg.get('provider') == 'skip':
+            return None
+        return cfg.get('endpoint', 'http://localhost:8082')
+    except Exception:
+        return None
+
+NLI_ENDPOINT = _get_nli_endpoint()
 CONTRADICTION_THRESHOLD = 0.7
 ENTAILMENT_THRESHOLD = 0.8
 MAX_SIMILAR_CHECK = 5
@@ -92,6 +102,9 @@ def check_contradictions(new_content: str, new_id: str) -> list[dict]:
     Returns list of detected relationships:
         [{"memory_id": str, "type": "contradicts"|"supports", "confidence": float, "content_preview": str}]
     """
+    if NLI_ENDPOINT is None:
+        return []
+
     if not _nli_available():
         return []
 
@@ -202,6 +215,10 @@ def scan_memories(limit: int = 50) -> list[dict]:
     Batch scan recent memories for contradictions among themselves.
     Useful for finding existing contradictions in the knowledge base.
     """
+    if NLI_ENDPOINT is None:
+        print("NLI disabled in config")
+        return []
+
     if not _nli_available():
         print("NLI service not available")
         return []

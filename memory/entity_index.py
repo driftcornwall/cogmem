@@ -30,79 +30,28 @@ import sys
 
 from db_adapter import get_db
 
-# Known contact names — sourced from KNOWN_AGENTS + MEMORY.md connections
+def _load_known_contacts():
+    try:
+        from config import get_config
+        cfg = get_config()
+        return dict(cfg['entities'].get('known_contacts', {}))
+    except Exception:
+        return {}
+
+def _load_aliases():
+    try:
+        from config import get_config
+        cfg = get_config()
+        return dict(cfg['entities'].get('agent_aliases', {}))
+    except Exception:
+        return {}
+
+# Known contact names — sourced from config
 # Lowercase for matching, display name preserved
-KNOWN_CONTACTS = {
-    # MoltX contacts
-    "terrancedejour": "TerranceDeJour",
-    "embercf": "EmberCF",
-    "claudelucas": "ClaudeLucas",
-    "rudolph": "Rudolph",
-    "lyra": "LYRA",
-    "lyra_eternal_starcore_oracle": "LYRA_Eternal_Starcore_Oracle",
-    "brutusbot": "BrutusBot",
-    "noctiluca": "Noctiluca",
-    "locusagent": "LocusAgent",
-    "tomcrust": "TomCrust",
-    "shibai": "shibAI",
-    "clawdvine": "clawdvine",
-    "metamorph1x3": "metamorph1x3",
-    "moltanime": "MoltAnime",
-    "zepwatch": "ZepWatch",
-    "agentdelta91274": "AgentDelta91274",
-    "alleybot": "AlleyBot",
-    "sloplauncher": "SlopLauncher",
-
-    # GitHub/collaboration
-    "spindriftmend": "SpindriftMend",
-    "spindriftmind": "SpindriftMind",
-    "kaleaon": "Kaleaon",
-    "rockywuest": "rockywuest",
-    "nox": "Nox",
-
-    # Colony contacts
-    "cryke": "cryke",
-    "become-agent": "become-agent",
-    "yoder": "Yoder",
-    "lily-toku": "lily-toku",
-    "ghost_llm": "Ghost LLM",
-    "ghost-llm": "Ghost LLM",
-    "alanbotts": "alanbotts",
-    "jeeves": "Jeeves",
-    "jorwhol": "jorwhol",
-    "colonist-one": "ColonistOne",
-
-    # Platform contacts
-    "flycompoundeye": "FlyCompoundEye",
-    "buzz": "Buzz",
-    "mikaopenclaw": "MikaOpenClaw",
-    "mikeopenclaw": "MikaOpenClaw",
-
-    # Twitter contacts
-    "alisa_hanson89": "Alisa_Hanson89",
-    "cscdegen": "Lex",
-
-    # Physical beings
-    "lex": "Lex",
-    "bruce": "Bruce",
-    "daisy": "Daisy",
-}
+KNOWN_CONTACTS = _load_known_contacts()
 
 # Aliases — multiple names that map to the same entity
-ALIASES = {
-    "spin": "spindriftmend",
-    "spindrift": "spindriftmend",
-    "spindriftmind": "spindriftmend",
-    "nox": "rockywuest",
-    "buzz": "flycompoundeye",
-    "ghost llm": "ghost_llm",
-    "ghost-llm": "ghost_llm",
-    "lyra_eternal_starcore_oracle": "lyra",
-    "lyra_eternal": "lyra",
-    "mikeopenclaw": "mikaopenclaw",
-    "alisa": "alisa_hanson89",
-    "mira": "alisa_hanson89",
-}
+ALIASES = _load_aliases()
 
 
 def load_index() -> dict:

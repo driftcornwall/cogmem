@@ -35,11 +35,26 @@ from co_occurrence import (
 # Phase 1 extraction: entity detection (pure NLP functions)
 from entity_detection import (
     detect_entities, detect_event_time,
-    ENTITY_TYPES, KNOWN_AGENTS, KNOWN_PROJECTS
+    ENTITY_TYPES,
+    KNOWN_AGENTS as _ED_KNOWN_AGENTS,
+    KNOWN_PROJECTS as _ED_KNOWN_PROJECTS,
 )
 
 # Phase 1 extraction: session state management
 import session_state
+
+# Config-driven identity — replaces hardcoded agent name and entity lists
+try:
+    from config import get_config
+    _AGENT_NAME = get_config()['agent']['name']
+    _KNOWN_PROJECTS = get_config()['entities'].get('known_projects', [])
+except Exception:
+    _AGENT_NAME = 'Agent'
+    _KNOWN_PROJECTS = []
+
+# Merge config-provided entities with entity_detection's defaults
+KNOWN_AGENTS = _ED_KNOWN_AGENTS
+KNOWN_PROJECTS = _ED_KNOWN_PROJECTS | set(_KNOWN_PROJECTS) if _KNOWN_PROJECTS else _ED_KNOWN_PROJECTS
 
 # Phase 2 extraction: read-only query functions
 from memory_query import (
@@ -201,7 +216,7 @@ def list_all_tags() -> dict[str, int]:
 def get_comprehensive_stats() -> dict:
     """
     Get comprehensive statistics for experiment tracking.
-    Developed for DriftCornwall/SpindriftMend co-occurrence experiment (Feb 2026).
+    Developed for agent co-occurrence experiment (Feb 2026).
 
     Returns dict with:
     - memory_stats: counts by type
@@ -511,10 +526,14 @@ def get_priming_candidates(
     # Phase 5: Domain-aware priming (DB-only)
     result['domain_primed'] = []
     try:
+        # Build social domain tags from config-loaded agents and projects
+        _social_tags = ['social', 'collaboration']
+        _social_tags.extend(a.lower() for a in KNOWN_AGENTS)
+        _social_tags.extend(p.lower() for p in KNOWN_PROJECTS)
+
         COGNITIVE_DOMAINS = {
             'reflection': ['thought', 'thinking', 'output', 'source:self'],
-            'social': ['social', 'collaboration', 'spindrift', 'spindriftmend',
-                       'kaleaon', 'moltx', 'moltbook'],
+            'social': _social_tags,
             'technical': ['insight', 'problem_solved', 'error', 'bug', 'fix',
                           'resolution', 'memory-system', 'architecture', 'api'],
             'economic': ['economic', 'bounty', 'clawtasks', 'wallet', 'earned'],

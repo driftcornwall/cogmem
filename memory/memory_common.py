@@ -22,13 +22,12 @@ SELF_EVOLUTION_ENABLED = True
 
 # Agent identity — configurable, not hardcoded
 def get_agent_name() -> str:
-    """Read agent name from identity config. Falls back to 'DriftCornwall'."""
-    identity_file = MEMORY_ROOT / "core" / "identity.md"
-    if identity_file.exists():
-        meta, _ = parse_memory_file(identity_file)
-        if meta.get('agent_name'):
-            return meta['agent_name']
-    return 'DriftCornwall'
+    """Read agent name from cogmem config. Falls back to 'Agent'."""
+    try:
+        from config import get_config
+        return get_config()['agent']['name']
+    except Exception:
+        return 'Agent'
 
 
 def parse_memory_file(filepath: Path) -> tuple[dict, str]:

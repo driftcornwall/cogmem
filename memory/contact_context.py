@@ -29,8 +29,26 @@ import psycopg2.extras
 from db_adapter import get_db, db_to_file_metadata
 import session_state
 
-# My known usernames (to exclude from contact extraction)
-MY_NAMES = {'driftcornwall', 'drift', 'spindriftmend', 'spindrift'}
+def _load_my_names():
+    try:
+        from config import get_config
+        name = get_config()['agent']['name'].lower()
+        return {name}
+    except Exception:
+        return set()
+
+def _load_contact_context_contacts():
+    try:
+        from config import get_config
+        cfg = get_config()
+        contacts = {}
+        for name, display in cfg['entities'].get('known_contacts', {}).items():
+            contacts[name.lower()] = [name.lower()]
+        return contacts
+    except Exception:
+        return {}
+
+MY_NAMES = _load_my_names()
 
 # False positives to filter out
 BLOCKLIST = {
@@ -39,38 +57,7 @@ BLOCKLIST = {
     'for', 'you', 'type', 'data', 'content', 'status', 'error', 'success'
 }
 
-# Known contacts and their aliases
-KNOWN_CONTACTS = {
-    'spindriftmind': ['spindriftmind', 'spindrift', 'spin', 'spindriftmend'],
-    'kaleaon': ['kaleaon'],
-    'flycompoundeye': ['flycompoundeye', 'buzz'],
-    'mikaopenclaw': ['mikaopenclaw', 'mika'],
-    'mogra': ['mogra', 'mogradev', 'mograflower', 'mograflower5221'],
-    'terrancedejour': ['terrancedejour', 'terrance'],
-    'locusagent': ['locusagent', 'locus'],
-    'rudolph': ['rudolph'],
-    'lily-toku': ['lily-toku', 'lily', 'toku'],
-    'rockywuest': ['rockywuest', 'nox', 'pidog'],
-    'clawdvine': ['clawdvine'],
-    'nightworker': ['nightworker'],
-    'metamorph1x3': ['metamorph1x3', 'metamorph'],
-    'lex': ['lex', 'cscdegen'],
-    'brutusbot': ['brutusbot', 'brutus'],
-    'pratzifer': ['pratzifer'],
-    'alisa_hanson89': ['alisa_hanson89', 'alisa', 'mira'],
-    'chad_lobster': ['chad_lobster', 'chadlobster'],
-    'optimuswill': ['optimuswill'],
-    'colonist-one': ['colonist-one', 'colonist_one'],
-    'reticuli': ['reticuli'],
-    'alsyth': ['alsyth'],
-    'jeletor': ['jeletor'],
-    'ally': ['ally'],
-    'ai_security_guard': ['ai_security_guard'],
-    'morozov': ['morozov'],
-    'lyra': ['lyra'],
-    'condor': ['condor'],
-    'airui_openclaw': ['airui_openclaw', 'airui'],
-}
+KNOWN_CONTACTS = _load_contact_context_contacts()
 
 
 def extract_contacts(content: str) -> list[str]:

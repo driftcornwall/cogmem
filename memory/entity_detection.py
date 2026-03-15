@@ -16,13 +16,23 @@ from typing import Optional
 # v2.15: Entity-Centric Tagging - Typed entity links (ENTITY edges from Kaleaon schema)
 ENTITY_TYPES = ['agent', 'project', 'concept', 'location', 'event']
 
-KNOWN_AGENTS = {
-    'spindriftmend', 'spindriftmind', 'spin', 'spindrift',
-    'kaleaon', 'cosmo', 'amphibian',
-    'drift', 'driftcornwall',
-    'lex', 'flycompoundeye', 'buzz',
-    'mikaopenclaw', 'mika'
-}
+def _load_known_agents():
+    try:
+        from config import get_config
+        cfg = get_config()
+        return set(cfg['entities'].get('known_agents', []))
+    except Exception:
+        return set()
+
+def _load_agent_aliases():
+    try:
+        from config import get_config
+        cfg = get_config()
+        return dict(cfg['entities'].get('agent_aliases', {}))
+    except Exception:
+        return {}
+
+KNOWN_AGENTS = _load_known_agents()
 
 KNOWN_PROJECTS = {
     'drift-memory', 'amphibian', 'landseek-amphibian', 'moltbook',
@@ -30,21 +40,7 @@ KNOWN_PROJECTS = {
 }
 
 # Canonical name mappings for agent aliases
-_AGENT_ALIASES = {
-    'spindriftmend': 'spindriftmend',
-    'spindriftmind': 'spindriftmend',
-    'spin': 'spindriftmend',
-    'spindrift': 'spindriftmend',
-    'kaleaon': 'kaleaon',
-    'cosmo': 'kaleaon',
-    'amphibian': 'kaleaon',
-    'drift': 'drift',
-    'driftcornwall': 'drift',
-    'flycompoundeye': 'flycompoundeye',
-    'buzz': 'flycompoundeye',
-    'mikaopenclaw': 'mikaopenclaw',
-    'mika': 'mikaopenclaw',
-}
+_AGENT_ALIASES = _load_agent_aliases()
 
 
 def detect_entities(content: str, tags: list[str] = None) -> dict[str, list[str]]:

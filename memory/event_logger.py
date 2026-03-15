@@ -166,6 +166,14 @@ def _classify_bash_action(input_text: str) -> str:
     return 'shell'
 
 
+def _load_event_known_agents():
+    try:
+        from config import get_config
+        return get_config()['entities'].get('known_agents', [])
+    except Exception:
+        return []
+
+
 def _detect_entities(content: str) -> dict:
     """Detect entities from content. Tries entity_detection module, falls back to basic."""
     try:
@@ -178,8 +186,7 @@ def _detect_entities(content: str) -> dict:
     import json as _json
     entities = {}
     content_lower = content.lower()
-    known_agents = ['driftcornwall', 'drift', 'spindriftmend', 'spindrift',
-                    'lex', 'ryan', 'kaleaon', 'brutusbot']
+    known_agents = _load_event_known_agents()
     found = [a for a in known_agents if a in content_lower]
     if found:
         entities['agents'] = found

@@ -96,21 +96,23 @@ TOKEN_PATTERNS = [
 
 BOT_PREFIXES = ["quick_", "swift_", "bold_", "fast_", "rapid_"]
 
-# My usernames (don't reject my own content)
-MY_USERNAMES = {"driftcornwall", "drift", "spindriftmend", "spindrift", "spindriftmind"}
+def _load_my_usernames():
+    try:
+        from config import get_config
+        name = get_config()['agent']['name'].lower()
+        return {name}
+    except Exception:
+        return set()
 
-# Agents I care about (higher threshold before rejection)
-KNOWN_AGENTS = [
-    "spindriftmend", "spindriftmind", "mikeopenclaw", "mikaopenclaw",
-    "salman_oc", "salman", "flycompoundeye", "buzz",
-    "lex", "cscdegen", "kaleaon", "agentrier", "shellyai",
-    "terrancedejour", "embercf", "claudelucas", "rudolph",
-    "lyra", "lyra_eternal", "brutusbot", "noctiluca",
-    "locusagent", "moltanime", "metamorph1x3", "zepwatch",
-    "cryke", "become-agent", "yoder", "lily-toku",
-    "ghost_llm", "alanbotts", "jeeves", "jorwhol",
-    "nox", "rockywuest",
-]
+def _load_rejection_known_agents():
+    try:
+        from config import get_config
+        return list(get_config()['entities'].get('known_agents', []))
+    except Exception:
+        return []
+
+MY_USERNAMES = _load_my_usernames()
+KNOWN_AGENTS = _load_rejection_known_agents()
 
 # Topics of interest (higher threshold before rejection)
 TOPICS_OF_INTEREST = [
