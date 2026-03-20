@@ -1,6 +1,7 @@
 """CogMem run command — start an interactive agent session."""
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Optional
 
@@ -67,25 +68,57 @@ def run_cmd(
     click.echo(f"Starting {session_label} session with '{name}' (model: {effective_model})")
     click.echo("Type 'exit' or 'quit' to end.\n")
 
-    # Simple REPL — engine integration wired in Task 10
-    while True:
+    # Select engine based on provider from config
+    config = lifecycle._config
+    provider = config.get("model", {}).get("provider", "claude-api")
+
+    if provider in {"claude-api", "claude-account"}:
         try:
-            user_input = click.prompt(f"{name}>", prompt_suffix=" ")
-        except (EOFError, KeyboardInterrupt):
-            click.echo()
-            break
+            from harness.claude_engine import ClaudeEngine
+            engine = ClaudeEngine(config)
+        except ImportError as exc:
+            click.echo(
+                f"Error: Could not import ClaudeEngine.\n{exc}",
+                err=True,
+            )
+            raise SystemExit(1) from exc
+    else:
+        click.echo(f"Provider not yet supported: {provider}", err=True)
+        raise SystemExit(1)
 
-        stripped = user_input.strip()
-        if stripped.lower() in {"exit", "quit"}:
-            break
-        if not stripped:
-            continue
+    async def conversation_loop() -> None:
+        while True:
+            try:
+                user_input = click.prompt(f"{name}>", prompt_suffix=" ")
+            except (EOFError, KeyboardInterrupt):
+                click.echo()
+                return
 
-        # TODO (Task 10): route through engine
-        click.echo(f"[{name}] Echo: {stripped}")
+            stripped = user_input.strip()
+            if stripped.lower() in {"exit", "quit"}:
+                return
+            if not stripped:
+                continue
 
-    click.echo("\nSession ending — consolidating...")
-    lifecycle.consolidate()
-    click.echo("Consolidation done. Running dream phase...")
-    lifecycle.dream()
-    click.echo("Done. Goodbye.")
+            try:
+                async for message in engine.run(stripped, system_prompt=system_prompt):
+                    if message.content:
+                        click.echo(f"[{name}] {message.content}")
+            except ImportError as exc:
+                click.echo(
+                    f"\nError: Claude Agent SDK not installed.\n{exc}\n",
+                    err=True,
+                )
+                return
+            except Exception as exc:  # noqa: BLE001
+                click.echo(f"\nError during engine run: {exc}", err=True)
+                return
+
+    try:
+        asyncio.run(conversation_loop())
+    finally:
+        click.echo("\nSession ending — consolidating...")
+        lifecycle.consolidate()
+        click.echo("Consolidation done. Running dream phase...")
+        lifecycle.dream()
+        click.echo("Done. Goodbye.")
