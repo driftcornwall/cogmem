@@ -50,6 +50,23 @@ class AgentLifecycle:
         self._agent_name: str = (
             self._config.get("agent", {}).get("name", self.agent_dir.name)
         )
+        self._schema: str = (
+            self._config.get("agent", {}).get("schema", self.agent_dir.name)
+        )
+
+    # ------------------------------------------------------------------
+    # Public properties
+    # ------------------------------------------------------------------
+
+    @property
+    def agent_name(self) -> str:
+        """The agent's display name, from cogmem.yaml ``agent.name``."""
+        return self._agent_name
+
+    @property
+    def schema(self) -> str:
+        """The agent's DB schema name, from cogmem.yaml ``agent.schema``."""
+        return self._schema
 
     # ------------------------------------------------------------------
     # Public API
