@@ -19,6 +19,41 @@ sys.path.insert(0, str(_ROOT / "memory"))
 sys.path.insert(0, str(_ROOT))
 
 
+def create_registry_schema(conn) -> None:
+    """Create the cogmem_registry schema and its tables.
+
+    Safe to call multiple times — all statements are IF NOT EXISTS.
+    """
+    cur = conn.cursor()
+
+    # Schema
+    cur.execute("CREATE SCHEMA IF NOT EXISTS cogmem_registry")
+
+    # Agents table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS cogmem_registry.agents (
+            name VARCHAR PRIMARY KEY,
+            schema_name VARCHAR UNIQUE NOT NULL,
+            path TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            last_active TIMESTAMPTZ DEFAULT NOW(),
+            metadata JSONB DEFAULT '{}'
+        )
+    """)
+
+    # Schema versions table (tracks which migrations have been applied)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS cogmem_registry.schema_versions (
+            schema_name VARCHAR NOT NULL,
+            migration_id VARCHAR NOT NULL,
+            applied_at TIMESTAMPTZ DEFAULT NOW(),
+            PRIMARY KEY (schema_name, migration_id)
+        )
+    """)
+
+    cur.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Initialize CogMem database")
     parser.add_argument('--config', type=str, default=None, help='Path to cogmem.yaml')
@@ -59,6 +94,14 @@ def main():
     )
     conn.autocommit = True
     cur = conn.cursor()
+
+    # 0. Create cogmem_registry schema (idempotent)
+    print("[0/5] Creating cogmem_registry schema...")
+    try:
+        create_registry_schema(conn)
+        print("  cogmem_registry: OK")
+    except Exception as e:
+        print(f"  cogmem_registry: WARNING — {e}")
 
     # 1. Create extensions
     print("[1/5] Creating extensions...")

@@ -237,9 +237,67 @@ class AgentRegistry:
             "provider": model_section.get("provider"),
         }
 
-    def _create_db_schema(self, schema_name: str) -> None:  # noqa: ARG002
-        """Stub — create PostgreSQL schema for the agent. Wired in Task 13."""
-        pass
+    def _create_db_schema(self, schema_name: str) -> None:
+        """Create the PostgreSQL schema for the agent and apply the initial migration.
+
+        Steps
+        -----
+        1. CREATE SCHEMA IF NOT EXISTS <schema_name>
+        2. Read and execute database/migrations/001_initial.sql within that schema
+        3. Register the agent in cogmem_registry.agents
+        4. Record the applied migration in cogmem_registry.schema_versions
+
+        Wrapped in try/except so filesystem-only creation still works when the
+        database is unavailable.
+        """
+        if self.db is None:
+            return
+
+        try:
+            # Resolve migration file relative to this source file's package root
+            _here = Path(__file__).parent  # harness/
+            _root = _here.parent           # cogmem/
+            migration_path = _root / "database" / "migrations" / "001_initial.sql"
+            migration_sql = migration_path.read_text(encoding="utf-8")
+            migration_id = "001_initial"
+
+            cur = self.db.cursor()
+
+            # 1. Create the agent's schema
+            cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
+
+            # 2. Execute migration within the agent's schema
+            cur.execute(f"SET search_path TO {schema_name}, public")
+            cur.execute(migration_sql)
+
+            # 3. Register in cogmem_registry.agents (path may not be known yet; use schema)
+            cur.execute("""
+                INSERT INTO cogmem_registry.agents (name, schema_name, path)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (name) DO UPDATE
+                    SET schema_name = EXCLUDED.schema_name,
+                        last_active  = NOW()
+            """, (schema_name, schema_name, str(self.agents_dir / schema_name)))
+
+            # 4. Record migration
+            cur.execute("""
+                INSERT INTO cogmem_registry.schema_versions (schema_name, migration_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+            """, (schema_name, migration_id))
+
+            # Reset search_path to default
+            cur.execute("SET search_path TO public")
+
+            self.db.commit()
+            cur.close()
+
+        except Exception:
+            # DB unavailable or any other error — filesystem creation already done
+            try:
+                self.db.rollback()
+            except Exception:
+                pass
 
 
 # ---------------------------------------------------------------------------
