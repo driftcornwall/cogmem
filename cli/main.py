@@ -9,6 +9,8 @@ from cli.commands.agent_cmd import (
     delete_agent_cmd,
 )
 from cli.commands.run_cmd import run_cmd
+from cli.commands.maintain_cmd import consolidate_cmd, fingerprint_cmd, health_cmd
+from cli.commands.team_cmd import team_cmd
 
 
 @click.group()
@@ -28,3 +30,7 @@ cli.add_command(list_agents_cmd)
 cli.add_command(agent_info_cmd)
 cli.add_command(delete_agent_cmd)
 cli.add_command(run_cmd)
+cli.add_command(consolidate_cmd)
+cli.add_command(fingerprint_cmd)
+cli.add_command(health_cmd)
+cli.add_command(team_cmd)
