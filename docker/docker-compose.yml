@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: cogmem-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: agent_memory
+      POSTGRES_USER: agent_admin
+      POSTGRES_PASSWORD: agent_memory_local_dev
+    volumes:
+      - cogmem-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_admin -d agent_memory"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  embeddings:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    container_name: cogmem-embeddings
+    ports:
+      - "8080:80"
+    environment:
+      MODEL_ID: BAAI/bge-small-en-v1.5
+    volumes:
+      - cogmem-model-cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  cogmem-db-data:
+  cogmem-model-cache:
