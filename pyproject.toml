@@ -41,7 +41,7 @@ Documentation = "https://github.com/driftcornwall/cogmem"
 Repository = "https://github.com/driftcornwall/cogmem"
 
 [tool.setuptools.packages.find]
-include = ["memory*", "database*", "scripts*"]
+include = ["memory*", "database*", "scripts*", "harness*"]
 
 [tool.setuptools.package-data]
 database = ["schema.sql", "schema_swarm_v2.sql"]
