@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "psycopg2-binary>=2.9.0",
     "pyyaml>=6.0",
+    "click>=8.0",
 ]
 
 [project.optional-dependencies]
@@ -33,7 +34,7 @@ all = ["openai>=1.0.0", "requests>=2.28.0"]
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21"]
 
 [project.scripts]
-cogmem = "memory.toolkit:main"
+cogmem = "cli.main:cli"
 
 [project.urls]
 Homepage = "https://github.com/driftcornwall/cogmem"
@@ -41,7 +42,7 @@ Documentation = "https://github.com/driftcornwall/cogmem"
 Repository = "https://github.com/driftcornwall/cogmem"
 
 [tool.setuptools.packages.find]
-include = ["memory*", "database*", "scripts*", "harness*"]
+include = ["memory*", "database*", "scripts*", "harness*", "cli*"]
 
 [tool.setuptools.package-data]
 database = ["schema.sql", "schema_swarm_v2.sql"]

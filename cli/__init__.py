@@ -1,0 +1,1 @@
+"""CogMem CLI package."""
