@@ -118,6 +118,28 @@ class ClaudeEngine(AgentEngine):
         if tool_schemas:
             options["tools"] = tool_schemas
 
+        # Optionally wire in the MCP memory server when the SDK supports it
+        try:
+            from harness.tools.mcp_server import (
+                create_memory_mcp_server,
+                get_memory_tool_names,
+            )
+            mcp_server = create_memory_mcp_server()
+            options.setdefault("mcp_servers", [])
+            options["mcp_servers"].append(mcp_server)
+            # Merge memory tool names into allowed_tools when present
+            existing_allowed = options.get("allowed_tools", [])
+            options["allowed_tools"] = existing_allowed + get_memory_tool_names()
+            logger.debug(
+                "ClaudeEngine.run(): MCP memory server attached, tools=%s",
+                get_memory_tool_names(),
+            )
+        except ImportError as mcp_exc:
+            logger.debug(
+                "ClaudeEngine.run(): MCP memory server not available (%s), continuing without it",
+                mcp_exc,
+            )
+
         logger.info(
             "ClaudeEngine.run(): model=%s tools=%d",
             self.model,
